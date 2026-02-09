@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://test_block_c"]
+
+[ext_resource type="Script" path="res://tests/test_model_loader.gd" id="1_test"]
+
+[node name="TestRunner" type="Node"]
+script = ExtResource("1_test")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+
+[node name="Table" type="CSGBox3D" parent="."]
+size = Vector3(2, 0.1, 1)
+use_collision = true
+collision_layer = 2
+collision_mask = 1
