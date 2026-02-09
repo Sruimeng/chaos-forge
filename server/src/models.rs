@@ -49,11 +49,6 @@ pub struct CreateWeaponRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ShareWeaponRequest {
-    pub share: Option<bool>,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct TripoTaskRequest {
     pub prompt: String,
     pub model_version: Option<String>,

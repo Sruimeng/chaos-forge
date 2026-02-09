@@ -1,5 +1,5 @@
 extends Node3D
-## Test Runner for Block A, B & C
+## Test Runner for Block A, B, C & D
 
 var _tests_passed: int = 0
 var _tests_failed: int = 0
@@ -19,6 +19,11 @@ var _model_path: String = ""
 var _weapon_spawned: bool = false
 var _spawned_weapon: RigidBody3D = null
 
+# Block D state
+var _inspection_completed: bool = false
+var _bug_score: float = 0.0
+var _bug_details: Dictionary = {}
+
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -28,7 +33,7 @@ func _ready() -> void:
 	print("=".repeat(50) + "\n")
 
 	await _run_block_a_tests()
-	await _run_block_b_and_c_tests()
+	await _run_block_b_c_d_tests()
 
 	_print_summary()
 
@@ -60,11 +65,16 @@ func _run_block_a_tests() -> void:
 		return game_manager.get("_model_loader") != null
 	)
 
+	# Block D prerequisites
+	_test("GameManager has PhysicsInspector", func():
+		return game_manager.get("_physics_inspector") != null
+	)
+
 	print("")
 
 
-## Block B + C: API + Model Loading (combined for efficiency)
-func _run_block_b_and_c_tests() -> void:
+## Block B + C + D: API + Model Loading + Physics (combined for efficiency)
+func _run_block_b_c_d_tests() -> void:
 	print("🔌 BLOCK B: Tripo API Integration\n")
 
 	# Test 1: Short prompt rejection
@@ -78,8 +88,8 @@ func _run_block_b_and_c_tests() -> void:
 		print("    Received: %s" % _validation_error)
 	_test("Rejects prompt < 10 chars", func(): return _validation_error.find("short") >= 0)
 
-	# Test 2: Real API call + Model Loading
-	print("\n  🌐 Testing API + Model Loading pipeline...")
+	# Test 2: Real API call + Model Loading + Physics Inspection
+	print("\n  🌐 Testing full pipeline (API + Load + Physics)...")
 	print("  (This may take 60-120 seconds)\n")
 
 	_api_success = false
@@ -88,16 +98,20 @@ func _run_block_b_and_c_tests() -> void:
 	_model_path = ""
 	_weapon_spawned = false
 	_spawned_weapon = null
+	_inspection_completed = false
+	_bug_score = 0.0
+	_bug_details = {}
 
 	api_client.model_ready.connect(_on_model_ready)
 	api_client.request_failed.connect(_on_api_failed)
 	game_manager.weapon_generated.connect(_on_weapon_generated)
+	game_manager.inspection_complete.connect(_on_inspection_complete)
 
 	api_client.request_model("a simple glowing crystal gemstone")
 
-	# Wait for full pipeline (API + load + spawn)
+	# Wait for full pipeline (API + load + spawn + inspect)
 	var elapsed := 0.0
-	while not _weapon_spawned and elapsed < 150.0:
+	while not _inspection_completed and elapsed < 160.0:
 		await get_tree().create_timer(1.0).timeout
 		elapsed += 1.0
 		if int(elapsed) % 10 == 0:
@@ -110,6 +124,7 @@ func _run_block_b_and_c_tests() -> void:
 	api_client.model_ready.disconnect(_on_model_ready)
 	api_client.request_failed.disconnect(_on_api_failed)
 	game_manager.weapon_generated.disconnect(_on_weapon_generated)
+	game_manager.inspection_complete.disconnect(_on_inspection_complete)
 
 	# Block B results
 	if not _api_completed:
@@ -137,12 +152,30 @@ func _run_block_b_and_c_tests() -> void:
 			return false
 		return _find_mesh(_spawned_weapon) != null
 	)
-	_test("GameManager state is INSPECTING", func():
-		return game_manager.current_state == game_manager.GameState.INSPECTING
-	)
 	_test("GameManager.current_weapon set", func():
 		return game_manager.current_weapon == _spawned_weapon
 	)
+
+	# Block D results
+	print("\n🔬 BLOCK D: Physics Detection\n")
+
+	_test("Physics inspection completed", func(): return _inspection_completed)
+	_test("Bug score calculated", func(): return _bug_score >= 0.0)
+	_test("Bug details provided", func(): return not _bug_details.is_empty())
+	_test("WeaponInstance.bug_score updated", func():
+		if not _spawned_weapon:
+			return false
+		if not _spawned_weapon is WeaponInstance:
+			return false
+		return _spawned_weapon.bug_score >= 0.0
+	)
+	_test("GameManager state is PITCHING", func():
+		return game_manager.current_state == game_manager.GameState.PITCHING
+	)
+
+	if _inspection_completed and OS.is_debug_build():
+		print("\n  Debug: Bug Score = %.2f" % _bug_score)
+		print("  Debug: Details = %s" % str(_bug_details))
 
 	print("")
 
@@ -180,6 +213,13 @@ func _on_weapon_generated(weapon: Node3D) -> void:
 	if weapon is RigidBody3D:
 		_spawned_weapon = weapon
 	print("  ✅ Weapon spawned in scene")
+
+
+func _on_inspection_complete(weapon: RigidBody3D, bug_score: float, bug_details: Dictionary) -> void:
+	_inspection_completed = true
+	_bug_score = bug_score
+	_bug_details = bug_details
+	print("  ✅ Physics inspection complete (Score: %.2f)" % bug_score)
 
 
 ## Test helpers

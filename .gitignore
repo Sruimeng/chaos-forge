@@ -5,3 +5,7 @@
 # Ignore real secrets, not the example
 secrets.cfg
 !secrets.cfg.example
+
+# Rust backend
+server/target/
+server/.env
