@@ -1,5 +1,5 @@
-class_name GameManager
 extends Node
+## Game state manager singleton
 
 signal weapon_generated(weapon_scene: Node3D)
 signal sale_completed(success: bool, profit: int)

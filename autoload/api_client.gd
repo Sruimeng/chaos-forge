@@ -1,8 +1,8 @@
-class_name APIClient
 extends Node
+## Tripo AI API client singleton
 
 const TRIPO_BASE_URL: String = "https://api.tripo3d.ai/v2/openapi"
-const MAX_POLL_RETRIES: int = 30
+const MAX_POLL_RETRIES: int = 60
 const POLL_INTERVAL: float = 2.0
 const FORBIDDEN_WORDS: Array[String] = ["weapon", "gun", "bomb", "violence"]
 
@@ -24,16 +24,27 @@ func _ready() -> void:
 
 func _load_api_key() -> void:
 	var config := ConfigFile.new()
-	var err := config.load("res://secrets.cfg")
 
-	if err != OK:
+	# Try res:// first (editor mode), then user:// (exported)
+	var paths := ["res://secrets.cfg", "user://secrets.cfg"]
+	var loaded := false
+
+	for path in paths:
+		var err := config.load(path)
+		if err == OK:
+			loaded = true
+			if OS.is_debug_build():
+				print("Loaded API config from: %s" % path)
+			break
+
+	if not loaded:
 		push_error("API configuration missing. Copy secrets.cfg.example to secrets.cfg and add your key.")
 		return
 
 	_api_key = config.get_value("tripo", "api_key", "")
 
-	if _api_key.is_empty():
-		push_error("API configuration missing. See documentation.")
+	if _api_key.is_empty() or _api_key == "YOUR_TRIPO_API_KEY_HERE":
+		push_error("API key not configured. Edit secrets.cfg with your Tripo API key.")
 
 func _setup_http() -> void:
 	_http = HTTPRequest.new()
@@ -57,7 +68,7 @@ func _on_http_completed(_result: int, response_code: int, _headers: PackedString
 		request_failed.emit("HTTP error: %d" % response_code)
 		return
 
-	var json := JSON.parse_string(body.get_string_from_utf8())
+	var json: Variant = JSON.parse_string(body.get_string_from_utf8())
 	if not json:
 		request_failed.emit("Invalid JSON response")
 		return
@@ -134,18 +145,32 @@ func _handle_task_status(task_data: Dictionary) -> void:
 	match status:
 		"success":
 			_poll_timer.stop()
-			if task_data.has("output") and task_data["output"].has("model"):
-				var model_url: String = task_data["output"]["model"]
-				_download_model(model_url)
-			else:
+			# Tripo API returns model URL in output.model or output.pbr_model
+			var output: Variant = task_data.get("output", {})
+			var model_url: String = ""
+
+			if output is Dictionary:
+				# Try different possible keys
+				if output.has("model"):
+					model_url = output["model"]
+				elif output.has("pbr_model"):
+					model_url = output["pbr_model"]
+				elif output.has("base_model"):
+					model_url = output["base_model"]
+
+			if model_url.is_empty():
+				if OS.is_debug_build():
+					print("API response output: %s" % str(output))
 				request_failed.emit("Success but no model URL in response")
+			else:
+				_download_model(model_url)
 
 		"failed":
 			_poll_timer.stop()
 			var error_msg: String = task_data.get("error", "Unknown error")
 			request_failed.emit("Model generation failed: %s" % error_msg)
 
-		"processing", "queued":
+		"processing", "queued", "running":
 			pass
 
 		_:
@@ -166,6 +191,10 @@ func _poll_task_status() -> void:
 	if _active_task_id.is_empty():
 		request_failed.emit("No active task to poll")
 		return
+
+	# Check if HTTP is busy
+	if _http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		return  # Skip this poll, try next interval
 
 	var headers := PackedStringArray([
 		"Authorization: Bearer %s" % _api_key
@@ -197,8 +226,8 @@ func _on_download_completed(_result: int, response_code: int, _headers: PackedSt
 		request_failed.emit("Downloaded file is empty")
 		return
 
-	if body.size() > 10 * 1024 * 1024:  # 10MB limit
-		request_failed.emit("Downloaded file exceeds 10MB limit")
+	if body.size() > 50 * 1024 * 1024:  # 50MB limit
+		request_failed.emit("Downloaded file exceeds 50MB limit")
 		return
 
 	var local_path := _save_model(body)
