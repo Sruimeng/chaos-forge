@@ -1,6 +1,6 @@
 class_name RagdollNPC
-extends Node3D
-## Physics-driven humanoid for weapon testing
+extends RigidBody3D
+## Simplified physics-driven character that can topple
 
 signal stability_changed(state: String)
 signal toppled
@@ -8,72 +8,50 @@ signal grabbed_weapon(weapon: RigidBody3D)
 
 enum StabilityState { STABLE, WOBBLING, TOPPLED }
 
-const TOPPLE_THRESHOLD: float = 15.0  # N·m torque threshold
-const WOBBLE_THRESHOLD: float = 5.0   # N·m torque threshold
-const RECOVERY_TIME: float = 2.0      # Seconds to recover from wobble
+const TOPPLE_ANGLE: float = 45.0  # Degrees from vertical to consider toppled
+const WOBBLE_ANGLE: float = 15.0  # Degrees to start wobbling
 
 var current_state: StabilityState = StabilityState.STABLE
 var held_weapon: RigidBody3D = null
-
-# Body parts (assigned in _ready from scene tree)
-var pelvis: RigidBody3D = null
-var spine: RigidBody3D = null
-var head: RigidBody3D = null
-var left_arm: RigidBody3D = null
-var right_arm: RigidBody3D = null
-var left_leg: RigidBody3D = null
-var right_leg: RigidBody3D = null
-
-# Hand attachment point
-var right_hand_marker: Marker3D = null
 var weapon_joint: Generic6DOFJoint3D = null
 
+var _initial_up: Vector3 = Vector3.UP
 var _wobble_timer: float = 0.0
-var _initial_pelvis_y: float = 0.0
 
 func _ready() -> void:
-	_find_body_parts()
-	_initial_pelvis_y = pelvis.global_position.y if pelvis else 0.0
+	# Set up physics
+	mass = 10.0
+	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
+	center_of_mass = Vector3(0, -0.3, 0)  # Low center of mass for stability
+
+	angular_damp = 2.0
+	linear_damp = 0.5
+
+	contact_monitor = true
+	max_contacts_reported = 4
+
+	add_to_group("ragdoll")
 
 	if OS.is_debug_build():
 		print("RagdollNPC ready | State: STABLE")
 
-func _find_body_parts() -> void:
-	pelvis = get_node_or_null("Pelvis")
-	spine = get_node_or_null("Pelvis/Spine")
-	head = get_node_or_null("Pelvis/Spine/Head")
-	left_arm = get_node_or_null("Pelvis/Spine/LeftArm")
-	right_arm = get_node_or_null("Pelvis/Spine/RightArm")
-	left_leg = get_node_or_null("Pelvis/LeftLeg")
-	right_leg = get_node_or_null("Pelvis/RightLeg")
-	right_hand_marker = get_node_or_null("Pelvis/Spine/RightArm/HandMarker")
-
 func _physics_process(delta: float) -> void:
-	if current_state == StabilityState.TOPPLED:
-		return
-
 	_check_stability(delta)
 
 func _check_stability(delta: float) -> void:
-	if not pelvis:
-		return
+	# Get current up vector
+	var current_up := global_transform.basis.y
+	var angle_from_vertical := rad_to_deg(acos(clamp(current_up.dot(Vector3.UP), -1.0, 1.0)))
 
-	# Check if pelvis dropped significantly (toppled)
-	var pelvis_drop := _initial_pelvis_y - pelvis.global_position.y
-	if pelvis_drop > 0.5:
+	if angle_from_vertical > TOPPLE_ANGLE:
 		_set_state(StabilityState.TOPPLED)
-		return
-
-	# Check angular velocity of spine (wobbling indicator)
-	if spine:
-		var angular_speed := spine.angular_velocity.length()
-		if angular_speed > 3.0:
-			_set_state(StabilityState.WOBBLING)
-			_wobble_timer = 0.0
-		elif current_state == StabilityState.WOBBLING:
-			_wobble_timer += delta
-			if _wobble_timer > RECOVERY_TIME:
-				_set_state(StabilityState.STABLE)
+	elif angle_from_vertical > WOBBLE_ANGLE:
+		_set_state(StabilityState.WOBBLING)
+		_wobble_timer = 0.0
+	elif current_state == StabilityState.WOBBLING:
+		_wobble_timer += delta
+		if _wobble_timer > 1.0:  # Recovered after 1 second of stability
+			_set_state(StabilityState.STABLE)
 
 func _set_state(new_state: StabilityState) -> void:
 	if current_state == new_state:
@@ -89,10 +67,10 @@ func _set_state(new_state: StabilityState) -> void:
 	if new_state == StabilityState.TOPPLED:
 		toppled.emit()
 
-## Attach weapon to right hand
+## Attach weapon to hand position
 func grab_weapon(weapon: RigidBody3D) -> void:
-	if not right_arm or not weapon:
-		push_error("Cannot grab weapon: missing arm or weapon")
+	if not weapon:
+		push_error("Cannot grab weapon: weapon is null")
 		return
 
 	if held_weapon:
@@ -102,35 +80,27 @@ func grab_weapon(weapon: RigidBody3D) -> void:
 
 	# Create joint to attach weapon
 	weapon_joint = Generic6DOFJoint3D.new()
-	weapon_joint.node_a = right_arm.get_path()
+	weapon_joint.node_a = get_path()
 	weapon_joint.node_b = weapon.get_path()
 
-	# Lock linear movement, allow some angular freedom
+	# Lock position relative to body
 	weapon_joint.set_flag_x(Generic6DOFJoint3D.FLAG_ENABLE_LINEAR_LIMIT, true)
 	weapon_joint.set_flag_y(Generic6DOFJoint3D.FLAG_ENABLE_LINEAR_LIMIT, true)
 	weapon_joint.set_flag_z(Generic6DOFJoint3D.FLAG_ENABLE_LINEAR_LIMIT, true)
 
-	# Set linear limits to 0 (locked)
-	weapon_joint.set_param_x(Generic6DOFJoint3D.PARAM_LINEAR_LOWER_LIMIT, 0)
-	weapon_joint.set_param_x(Generic6DOFJoint3D.PARAM_LINEAR_UPPER_LIMIT, 0)
-	weapon_joint.set_param_y(Generic6DOFJoint3D.PARAM_LINEAR_LOWER_LIMIT, 0)
-	weapon_joint.set_param_y(Generic6DOFJoint3D.PARAM_LINEAR_UPPER_LIMIT, 0)
-	weapon_joint.set_param_z(Generic6DOFJoint3D.PARAM_LINEAR_LOWER_LIMIT, 0)
-	weapon_joint.set_param_z(Generic6DOFJoint3D.PARAM_LINEAR_UPPER_LIMIT, 0)
-
 	add_child(weapon_joint)
 
-	# Position weapon at hand
-	if right_hand_marker:
-		weapon.global_position = right_hand_marker.global_position
+	# Position weapon at hand (right side of body)
+	var hand_pos := global_position + global_transform.basis.x * 0.4
+	weapon.global_position = hand_pos
 
 	grabbed_weapon.emit(weapon)
 
 	if OS.is_debug_build():
 		print("RagdollNPC grabbed weapon: mass=%.2f" % weapon.mass)
 
-	# Calculate expected torque and predict outcome
-	_evaluate_weapon_torque(weapon)
+	# Apply torque based on weapon mass
+	_apply_weapon_torque(weapon)
 
 func release_weapon() -> void:
 	if weapon_joint:
@@ -138,29 +108,17 @@ func release_weapon() -> void:
 		weapon_joint = null
 	held_weapon = null
 
-func _evaluate_weapon_torque(weapon: RigidBody3D) -> void:
-	if not right_arm:
-		return
+func _apply_weapon_torque(weapon: RigidBody3D) -> void:
+	# Calculate torque from weapon weight
+	var lever_arm: float = 0.4  # Distance from center to hand
+	var torque_magnitude := weapon.mass * 9.8 * lever_arm
 
-	# Calculate lever arm (distance from shoulder to hand)
-	var lever_arm: float = 0.5  # Approximate arm length
-
-	# Calculate torque: mass * gravity * lever_arm
-	var torque := weapon.mass * 9.8 * lever_arm
+	# Apply as angular impulse (rotate around forward axis)
+	var torque_axis := global_transform.basis.z
+	apply_torque_impulse(torque_axis * torque_magnitude * 0.1)
 
 	if OS.is_debug_build():
-		print("Weapon torque: %.2f N·m" % torque)
-
-	# Predict reaction based on torque
-	if torque > TOPPLE_THRESHOLD:
-		if OS.is_debug_build():
-			print("Prediction: TOPPLE (torque > %.1f)" % TOPPLE_THRESHOLD)
-	elif torque > WOBBLE_THRESHOLD:
-		if OS.is_debug_build():
-			print("Prediction: WOBBLE (torque > %.1f)" % WOBBLE_THRESHOLD)
-	else:
-		if OS.is_debug_build():
-			print("Prediction: STABLE")
+		print("Applied weapon torque: %.2f N·m" % torque_magnitude)
 
 ## Get current stability as string
 func get_stability_state() -> String:
