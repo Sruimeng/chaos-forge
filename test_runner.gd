@@ -24,6 +24,13 @@ var _inspection_completed: bool = false
 var _bug_score: float = 0.0
 var _bug_details: Dictionary = {}
 
+# Block E state
+var _pitches_received: bool = false
+var _pitch_options: Array = []
+var _sale_completed: bool = false
+var _sale_success: bool = false
+var _sale_profit: int = 0
+
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -34,6 +41,7 @@ func _ready() -> void:
 
 	await _run_block_a_tests()
 	await _run_block_b_c_d_tests()
+	await _run_block_e_tests()
 
 	_print_summary()
 
@@ -176,6 +184,88 @@ func _run_block_b_c_d_tests() -> void:
 	if _inspection_completed and OS.is_debug_build():
 		print("\n  Debug: Bug Score = %.2f" % _bug_score)
 		print("  Debug: Details = %s" % str(_bug_details))
+
+	print("")
+
+
+## Block E: Sales System Tests
+func _run_block_e_tests() -> void:
+	print("💰 BLOCK E: Sales System\n")
+
+	# Test SalesManager existence
+	_test("GameManager has SalesManager", func():
+		return game_manager.get("_sales_manager") != null
+	)
+
+	# Test pitch generation
+	var sales_manager: Node = game_manager.get("_sales_manager")
+	if sales_manager:
+		# Create test NPC
+		var test_npc = sales_manager.create_random_npc()
+		_test("create_random_npc returns NPCProfile", func():
+			return test_npc != null and test_npc.get("npc_name") != null
+		)
+		_test("NPCProfile has valid personality", func():
+			return test_npc.personality in ["skeptical", "gullible", "neutral"]
+		)
+		_test("NPCProfile gullibility in range", func():
+			return test_npc.gullibility >= 0.3 and test_npc.gullibility <= 0.9
+		)
+
+		# Test pitch generation with different bug levels
+		var low_bug_options: Array = sales_manager.generate_pitch_options(0.1, "sword", test_npc)
+		_test("generate_pitch_options returns array", func():
+			return low_bug_options is Array
+		)
+		_test("Low bug level selects premium pitch", func():
+			if low_bug_options.is_empty():
+				return false
+			return low_bug_options[0].pitch_type == "premium"
+		)
+
+		var mid_bug_options: Array = sales_manager.generate_pitch_options(0.4, "axe", test_npc)
+		_test("Mid bug level selects exotic pitch", func():
+			if mid_bug_options.is_empty():
+				return false
+			return mid_bug_options[0].pitch_type == "exotic"
+		)
+
+		var high_bug_options: Array = sales_manager.generate_pitch_options(0.7, "club", test_npc)
+		_test("High bug level selects discount pitch", func():
+			if high_bug_options.is_empty():
+				return false
+			return high_bug_options[0].pitch_type == "discount"
+		)
+
+		# Test price multipliers
+		_test("Premium has higher price multiplier", func():
+			if low_bug_options.is_empty():
+				return false
+			return low_bug_options[0].price_multiplier > 1.0
+		)
+		_test("Discount has lower price multiplier", func():
+			if high_bug_options.is_empty():
+				return false
+			return high_bug_options[0].price_multiplier < 1.0
+		)
+
+		# Test success rate bounds
+		_test("Success rate within valid bounds", func():
+			if low_bug_options.is_empty():
+				return false
+			var rate: float = low_bug_options[0].success_rate
+			return rate >= 0.1 and rate <= 0.9
+		)
+
+		# Test GameManager signals
+		_test("GameManager has pitches_ready signal", func():
+			return game_manager.has_signal("pitches_ready")
+		)
+		_test("GameManager has sale_completed signal", func():
+			return game_manager.has_signal("sale_completed")
+		)
+	else:
+		_record_result(false, "SalesManager not found - skipping remaining tests")
 
 	print("")
 
