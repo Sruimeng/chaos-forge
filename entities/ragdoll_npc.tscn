@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://c8ragdoll_npc"]
+[gd_scene load_steps=14 format=3 uid="uid://c8ragdoll_npc"]
 
 [ext_resource type="Script" path="res://entities/ragdoll_npc.gd" id="1_script"]
 
@@ -6,14 +6,30 @@
 radius = 0.15
 height = 0.3
 
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_pelvis"]
+radius = 0.15
+height = 0.3
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_spine"]
+radius = 0.12
+height = 0.4
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_spine"]
 radius = 0.12
 height = 0.4
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_head"]
 radius = 0.12
 
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.12
+height = 0.24
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_arm"]
+radius = 0.05
+height = 0.4
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_arm"]
 radius = 0.05
 height = 0.4
 
@@ -21,7 +37,14 @@ height = 0.4
 radius = 0.07
 height = 0.4
 
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_leg"]
+radius = 0.07
+height = 0.4
+
 [sub_resource type="BoxShape3D" id="BoxShape3D_foot"]
+size = Vector3(0.1, 0.05, 0.15)
+
+[sub_resource type="BoxMesh" id="BoxMesh_foot"]
 size = Vector3(0.1, 0.05, 0.15)
 
 [node name="RagdollNPC" type="Node3D"]
@@ -30,7 +53,6 @@ script = ExtResource("1_script")
 [node name="Pelvis" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
 mass = 5.0
-physics_material_override = null
 linear_damp = 0.5
 angular_damp = 2.0
 contact_monitor = true
@@ -38,6 +60,9 @@ max_contacts_reported = 4
 
 [node name="PelvisShape" type="CollisionShape3D" parent="Pelvis"]
 shape = SubResource("CapsuleShape3D_pelvis")
+
+[node name="PelvisMesh" type="MeshInstance3D" parent="Pelvis"]
+mesh = SubResource("CapsuleMesh_pelvis")
 
 [node name="SpineJoint" type="PinJoint3D" parent="Pelvis"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
@@ -58,6 +83,9 @@ max_contacts_reported = 4
 [node name="SpineShape" type="CollisionShape3D" parent="Pelvis/Spine"]
 shape = SubResource("CapsuleShape3D_spine")
 
+[node name="SpineMesh" type="MeshInstance3D" parent="Pelvis/Spine"]
+mesh = SubResource("CapsuleMesh_spine")
+
 [node name="HeadJoint" type="PinJoint3D" parent="Pelvis/Spine"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 node_a = NodePath("..")
@@ -74,6 +102,9 @@ angular_damp = 2.0
 
 [node name="HeadShape" type="CollisionShape3D" parent="Pelvis/Spine/Head"]
 shape = SubResource("SphereShape3D_head")
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Pelvis/Spine/Head"]
+mesh = SubResource("SphereMesh_head")
 
 [node name="LeftArmJoint" type="PinJoint3D" parent="Pelvis/Spine"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.15, 0)
@@ -92,6 +123,9 @@ angular_damp = 1.5
 [node name="LeftArmShape" type="CollisionShape3D" parent="Pelvis/Spine/LeftArm"]
 shape = SubResource("CapsuleShape3D_arm")
 
+[node name="LeftArmMesh" type="MeshInstance3D" parent="Pelvis/Spine/LeftArm"]
+mesh = SubResource("CapsuleMesh_arm")
+
 [node name="RightArmJoint" type="PinJoint3D" parent="Pelvis/Spine"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.15, 0)
 node_a = NodePath("..")
@@ -108,6 +142,9 @@ angular_damp = 1.5
 
 [node name="RightArmShape" type="CollisionShape3D" parent="Pelvis/Spine/RightArm"]
 shape = SubResource("CapsuleShape3D_arm")
+
+[node name="RightArmMesh" type="MeshInstance3D" parent="Pelvis/Spine/RightArm"]
+mesh = SubResource("CapsuleMesh_arm")
 
 [node name="HandMarker" type="Marker3D" parent="Pelvis/Spine/RightArm"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
@@ -129,9 +166,16 @@ angular_damp = 3.0
 [node name="LeftLegShape" type="CollisionShape3D" parent="Pelvis/LeftLeg"]
 shape = SubResource("CapsuleShape3D_leg")
 
+[node name="LeftLegMesh" type="MeshInstance3D" parent="Pelvis/LeftLeg"]
+mesh = SubResource("CapsuleMesh_leg")
+
 [node name="LeftFoot" type="CollisionShape3D" parent="Pelvis/LeftLeg"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
 shape = SubResource("BoxShape3D_foot")
+
+[node name="LeftFootMesh" type="MeshInstance3D" parent="Pelvis/LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
+mesh = SubResource("BoxMesh_foot")
 
 [node name="RightLegJoint" type="PinJoint3D" parent="Pelvis"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, -0.2, 0)
@@ -150,6 +194,13 @@ angular_damp = 3.0
 [node name="RightLegShape" type="CollisionShape3D" parent="Pelvis/RightLeg"]
 shape = SubResource("CapsuleShape3D_leg")
 
+[node name="RightLegMesh" type="MeshInstance3D" parent="Pelvis/RightLeg"]
+mesh = SubResource("CapsuleMesh_leg")
+
 [node name="RightFoot" type="CollisionShape3D" parent="Pelvis/RightLeg"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
 shape = SubResource("BoxShape3D_foot")
+
+[node name="RightFootMesh" type="MeshInstance3D" parent="Pelvis/RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
+mesh = SubResource("BoxMesh_foot")
