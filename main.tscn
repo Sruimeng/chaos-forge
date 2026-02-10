@@ -1,9 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cqm3xvxb4w5y0"]
+[gd_scene load_steps=3 format=3 uid="uid://cqm3xvxb4w5y0"]
 
 [ext_resource type="Script" path="res://test_runner.gd" id="1_test"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_table"]
-size = Vector3(2, 0.1, 1)
+[ext_resource type="PackedScene" uid="uid://c8ragdoll_npc" path="res://entities/ragdoll_npc.tscn" id="2_ragdoll"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_test")
@@ -17,7 +15,16 @@ shadow_enabled = true
 
 [node name="Table" type="CSGBox3D" parent="."]
 size = Vector3(2, 0.1, 1)
-material_override = null
 use_collision = true
 collision_layer = 2
 collision_mask = 1
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+size = Vector3(10, 0.1, 10)
+use_collision = true
+collision_layer = 2
+collision_mask = 1
+
+[node name="RagdollNPC" parent="." instance=ExtResource("2_ragdoll")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
