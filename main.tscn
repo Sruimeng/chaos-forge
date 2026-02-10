@@ -1,32 +1,63 @@
-[gd_scene load_steps=3 format=3 uid="uid://cqm3xvxb4w5y0"]
+[gd_scene load_steps=5 format=3 uid="uid://cqm3xvxb4w5y0"]
 
-[ext_resource type="PackedScene" uid="uid://c8ragdoll_npc" path="res://entities/ragdoll_npc.tscn" id="1_ragdoll"]
-[ext_resource type="PackedScene" uid="uid://game_ui_scene" path="res://ui/game_ui.tscn" id="2_game_ui"]
+[ext_resource type="Script" path="res://entities/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://systems/forge_zone.gd" id="2_forge_zone"]
+[ext_resource type="PackedScene" uid="uid://crafting_panel_ui" path="res://ui/crafting_panel.tscn" id="3_crafting_panel"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_forge"]
+size = Vector3(3, 2, 3)
 
 [node name="Main" type="Node3D"]
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2.5, 4)
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 8, 8)
+fov = 60.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 3, 3)
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 10)
 shadow_enabled = true
 
-[node name="Table" type="CSGBox3D" parent="."]
+[node name="Arena" type="Node3D" parent="."]
+
+[node name="Floor" type="CSGBox3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+size = Vector3(20, 0.5, 20)
+use_collision = true
+collision_layer = 1
+collision_mask = 1
+
+[node name="Table" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-size = Vector3(2, 0.1, 1)
+size = Vector3(2, 1, 2)
 use_collision = true
 collision_layer = 1
 collision_mask = 1
 
-[node name="Floor" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
-size = Vector3(10, 0.1, 10)
-use_collision = true
-collision_layer = 1
-collision_mask = 1
+[node name="ForgeZone" type="Area3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("2_forge_zone")
 
-[node name="RagdollNPC" parent="." groups=["ragdoll"] instance=ExtResource("1_ragdoll")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.0, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Arena/ForgeZone"]
+shape = SubResource("BoxShape3D_forge")
 
-[node name="GameUI" parent="." instance=ExtResource("2_game_ui")]
+[node name="SpawnPoints" type="Node3D" parent="Arena"]
+
+[node name="North" type="Marker3D" parent="Arena/SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -7)
+
+[node name="South" type="Marker3D" parent="Arena/SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 7)
+
+[node name="East" type="Marker3D" parent="Arena/SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.5, 0)
+
+[node name="West" type="Marker3D" parent="Arena/SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.5, 0)
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 5)
+script = ExtResource("1_player")
+
+[node name="CraftingPanel" parent="." instance=ExtResource("3_crafting_panel")]

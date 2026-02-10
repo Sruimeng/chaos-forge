@@ -1,12 +1,14 @@
 class_name ModelLoader
 extends Node
-## Loads GLB files and wraps them in physics-enabled weapon instances
+## Loads GLB files and wraps them in physics-enabled instances
 
 const WeaponInstanceScript := preload("res://entities/weapon_instance.gd")
+const MonsterScript := preload("res://entities/monster.gd")
 const MAX_VERTICES: int = 500000  # AI models can be detailed
 const SPAWN_HEIGHT_OFFSET: float = 1.5
 
 signal weapon_spawned(weapon: RigidBody3D)
+signal monster_loaded(monster: RigidBody3D)
 signal load_failed(error_msg: String)
 
 var _table_position: Vector3 = Vector3.ZERO
@@ -147,3 +149,57 @@ func _generate_convex_shape(mesh: MeshInstance3D) -> ConvexPolygonShape3D:
 func _position_weapon(weapon: RigidBody3D) -> void:
 	var spawn_pos := _table_position + Vector3(0, SPAWN_HEIGHT_OFFSET, 0)
 	weapon.global_position = spawn_pos
+
+
+## Load monster from GLB file
+func load_monster(glb_path: String) -> Monster:
+	if not FileAccess.file_exists(glb_path):
+		load_failed.emit("Monster GLB not found: %s" % glb_path)
+		return null
+
+	var scene: Node3D = _load_glb(glb_path)
+	if not scene:
+		load_failed.emit("Failed to parse monster GLB: %s" % glb_path)
+		return null
+
+	var mesh: MeshInstance3D = _extract_mesh(scene)
+	if not mesh:
+		load_failed.emit("No mesh found in monster GLB")
+		scene.queue_free()
+		return null
+
+	if not _validate_mesh(mesh):
+		scene.queue_free()
+		return null
+
+	var monster: Monster = _create_monster_body(scene, mesh)
+	if monster:
+		monster_loaded.emit(monster)
+
+	return monster
+
+
+func _create_monster_body(scene: Node3D, mesh: MeshInstance3D) -> Monster:
+	var monster: Monster = MonsterScript.new()
+	monster.add_child(scene)
+
+	# Set collision layer for monsters
+	monster.collision_layer = 8  # Monster layer
+	monster.collision_mask = 1 | 4  # World + Weapon
+
+	var collision := _create_collision_shape(mesh)
+	if collision:
+		monster.add_child(collision)
+	else:
+		# Fallback sphere collision
+		var fallback := CollisionShape3D.new()
+		var sphere := SphereShape3D.new()
+		sphere.radius = 0.5
+		fallback.shape = sphere
+		fallback.position.y = 0.5
+		monster.add_child(fallback)
+
+	if OS.is_debug_build():
+		print("Monster body created from GLB")
+
+	return monster
