@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://game_ui_scene"]
+
+[ext_resource type="Script" path="res://ui/game_ui.gd" id="1_script"]
+
+[node name="GameUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -200.0
+offset_right = 400.0
+offset_bottom = -20.0
+grow_vertical = 0
+
+[node name="OrderLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "📜 等待订单..."
+autowrap_mode = 2
+
+[node name="StateLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "💤 状态: IDLE"
+
+[node name="PromptInput" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+placeholder_text = "输入武器描述..."
+
+[node name="SubmitButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "🔨 锻造！"
+
+[node name="ResultLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = ""
+autowrap_mode = 2

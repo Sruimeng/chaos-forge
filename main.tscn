@@ -1,19 +1,19 @@
 [gd_scene load_steps=3 format=3 uid="uid://cqm3xvxb4w5y0"]
 
-[ext_resource type="Script" path="res://test_runner.gd" id="1_test"]
-[ext_resource type="PackedScene" uid="uid://c8ragdoll_npc" path="res://entities/ragdoll_npc.tscn" id="2_ragdoll"]
+[ext_resource type="PackedScene" uid="uid://c8ragdoll_npc" path="res://entities/ragdoll_npc.tscn" id="1_ragdoll"]
+[ext_resource type="PackedScene" uid="uid://game_ui_scene" path="res://ui/game_ui.tscn" id="2_game_ui"]
 
 [node name="Main" type="Node3D"]
-script = ExtResource("1_test")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 2, 5)
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2.5, 4)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 3, 3)
 shadow_enabled = true
 
 [node name="Table" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 size = Vector3(2, 0.1, 1)
 use_collision = true
 collision_layer = 2
@@ -26,5 +26,7 @@ use_collision = true
 collision_layer = 2
 collision_mask = 1
 
-[node name="RagdollNPC" parent="." instance=ExtResource("2_ragdoll")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+[node name="RagdollNPC" parent="." groups=["ragdoll"] instance=ExtResource("1_ragdoll")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0)
+
+[node name="GameUI" parent="." instance=ExtResource("2_game_ui")]

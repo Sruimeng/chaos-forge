@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://c8ragdoll_npc"]
+[gd_scene load_steps=8 format=3 uid="uid://c8ragdoll_npc"]
 
 [ext_resource type="Script" path="res://entities/ragdoll_npc.gd" id="1_script"]
 
@@ -19,72 +19,92 @@ height = 0.4
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_leg"]
 radius = 0.07
-height = 0.5
+height = 0.4
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_foot"]
+size = Vector3(0.1, 0.05, 0.15)
 
 [node name="RagdollNPC" type="Node3D"]
 script = ExtResource("1_script")
 
 [node name="Pelvis" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
-mass = 3.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+mass = 5.0
+physics_material_override = null
+linear_damp = 0.5
+angular_damp = 2.0
 contact_monitor = true
 max_contacts_reported = 4
 
 [node name="PelvisShape" type="CollisionShape3D" parent="Pelvis"]
 shape = SubResource("CapsuleShape3D_pelvis")
 
-[node name="PelvisMesh" type="MeshInstance3D" parent="Pelvis"]
-
 [node name="SpineJoint" type="PinJoint3D" parent="Pelvis"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 node_a = NodePath("..")
 node_b = NodePath("../Spine")
+params/bias = 0.5
+params/damping = 2.0
+params/impulse_clamp = 10.0
 
 [node name="Spine" type="RigidBody3D" parent="Pelvis"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
-mass = 2.0
+mass = 3.0
+linear_damp = 0.5
+angular_damp = 2.0
 contact_monitor = true
 max_contacts_reported = 4
 
 [node name="SpineShape" type="CollisionShape3D" parent="Pelvis/Spine"]
 shape = SubResource("CapsuleShape3D_spine")
 
-[node name="SpineMesh" type="MeshInstance3D" parent="Pelvis/Spine"]
-
 [node name="HeadJoint" type="PinJoint3D" parent="Pelvis/Spine"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 node_a = NodePath("..")
 node_b = NodePath("../Head")
+params/bias = 0.5
+params/damping = 2.0
+params/impulse_clamp = 5.0
 
 [node name="Head" type="RigidBody3D" parent="Pelvis/Spine"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-mass = 1.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mass = 1.5
+linear_damp = 0.5
+angular_damp = 2.0
 
 [node name="HeadShape" type="CollisionShape3D" parent="Pelvis/Spine/Head"]
 shape = SubResource("SphereShape3D_head")
 
-[node name="HeadMesh" type="MeshInstance3D" parent="Pelvis/Spine/Head"]
-
 [node name="LeftArmJoint" type="PinJoint3D" parent="Pelvis/Spine"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 0.15, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.15, 0)
 node_a = NodePath("..")
 node_b = NodePath("../LeftArm")
+params/bias = 0.3
+params/damping = 1.5
+params/impulse_clamp = 3.0
 
 [node name="LeftArm" type="RigidBody3D" parent="Pelvis/Spine"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.35, 0.1, 0)
-mass = 0.8
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.35, 0.0, 0)
+mass = 1.0
+linear_damp = 0.5
+angular_damp = 1.5
 
 [node name="LeftArmShape" type="CollisionShape3D" parent="Pelvis/Spine/LeftArm"]
 shape = SubResource("CapsuleShape3D_arm")
 
 [node name="RightArmJoint" type="PinJoint3D" parent="Pelvis/Spine"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.15, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.15, 0)
 node_a = NodePath("..")
 node_b = NodePath("../RightArm")
+params/bias = 0.3
+params/damping = 1.5
+params/impulse_clamp = 3.0
 
 [node name="RightArm" type="RigidBody3D" parent="Pelvis/Spine"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.35, 0.1, 0)
-mass = 0.8
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.35, 0.0, 0)
+mass = 1.0
+linear_damp = 0.5
+angular_damp = 1.5
 
 [node name="RightArmShape" type="CollisionShape3D" parent="Pelvis/Spine/RightArm"]
 shape = SubResource("CapsuleShape3D_arm")
@@ -96,22 +116,40 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.2, 0)
 node_a = NodePath("..")
 node_b = NodePath("../LeftLeg")
+params/bias = 0.8
+params/damping = 3.0
+params/impulse_clamp = 20.0
 
 [node name="LeftLeg" type="RigidBody3D" parent="Pelvis"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.5, 0)
-mass = 1.2
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.45, 0)
+mass = 2.0
+linear_damp = 1.0
+angular_damp = 3.0
 
 [node name="LeftLegShape" type="CollisionShape3D" parent="Pelvis/LeftLeg"]
 shape = SubResource("CapsuleShape3D_leg")
+
+[node name="LeftFoot" type="CollisionShape3D" parent="Pelvis/LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
+shape = SubResource("BoxShape3D_foot")
 
 [node name="RightLegJoint" type="PinJoint3D" parent="Pelvis"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, -0.2, 0)
 node_a = NodePath("..")
 node_b = NodePath("../RightLeg")
+params/bias = 0.8
+params/damping = 3.0
+params/impulse_clamp = 20.0
 
 [node name="RightLeg" type="RigidBody3D" parent="Pelvis"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, -0.5, 0)
-mass = 1.2
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, -0.45, 0)
+mass = 2.0
+linear_damp = 1.0
+angular_damp = 3.0
 
 [node name="RightLegShape" type="CollisionShape3D" parent="Pelvis/RightLeg"]
 shape = SubResource("CapsuleShape3D_leg")
+
+[node name="RightFoot" type="CollisionShape3D" parent="Pelvis/RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
+shape = SubResource("BoxShape3D_foot")
